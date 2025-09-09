@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Language IDE</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ide-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            margin: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 300;
+        }
+
+        .header .logo {
+            font-weight: bold;
+            color: #3498db;
+        }
+
+        .toolbar {
+            background: #f8f9fa;
+            padding: 10px 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn.success {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+        }
+
+        .btn.danger {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+
+        .btn.warning {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+        }
+
+        .main-content {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .left-panel {
+            width: 60%;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #dee2e6;
+        }
+
+        .right-panel {
+            width: 40%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            font-weight: 600;
+            color: #2c3e50;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .code-editor {
+            flex: 1;
+            position: relative;
+        }
+
+        #editor {
+            width: 100%;
+            height: 100%;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            padding: 15px;
+            border: none;
+            outline: none;
+            resize: none;
+            background: #2c3e50;
+            color: #ecf0f1;
+            line-height: 1.5;
+        }
+
+        .line-numbers {
+            position: absolute;
+            left: 0;
+            top: 15px;
+            width: 40px;
+            background: #34495e;
+            color: #7f8c8d;
+            padding: 15px 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            text-align: right;
+            border-right: 1px solid #7f8c8d;
+        }
+
+        #editor {
+            padding-left: 55px;
+        }
+
+        .output-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+        }
+
+        .tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+            color: #6c757d;
+        }
+
+        .tab.active {
+            background: white;
+            color: #2c3e50;
+            border-bottom-color: #3498db;
+        }
+
+        .tab-content {
+            flex: 1;
+            padding: 15px;
+            background: white;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-y: auto;
+        }
+
+        .output {
+            white-space: pre-wrap;
+            color: #2c3e50;
+        }
+
+        .error {
+            color: #e74c3c;
+        }
+
+
+        .input-prompt {
+            background: #3498db;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .input-prompt input {
+            flex: 1;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .examples-dropdown {
+            position: relative;
+        }
+
+        .examples-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            min-width: 200px;
+            z-index: 1000;
+            display: none;
+        }
+
+        .examples-menu.show {
+            display: block;
+        }
+
+        .example-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .example-item:hover {
+            background: #f8f9fa;
+        }
+
+        .status-bar {
+            background: #2c3e50;
+            color: white;
+            padding: 8px 20px;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-indicator.ready {
+            background: #27ae60;
+        }
+
+        .status-indicator.compiling {
+            background: #f39c12;
+        }
+
+        .status-indicator.running {
+            background: #3498db;
+        }
+
+        .status-indicator.error {
+            background: #e74c3c;
+        }
+
+        .ast-view {
+            font-size: 12px;
+            color: #2c3e50;
+        }
+
+        .ast-node {
+            margin-left: 20px;
+            margin-top: 5px;
+            padding: 2px 0;
+        }
+
+        .ast-node-type {
+            color: #3498db;
+            font-weight: bold;
+        }
+
+        .ast-node-value {
+            color: #27ae60;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+
+            .left-panel, .right-panel {
+                width: 100%;
+            }
+
+            .left-panel {
+                height: 60%;
+            }
+
+            .right-panel {
+                height: 40%;
+                border-right: none;
+                border-top: 1px solid #dee2e6;
+            }
+
+            .ide-container {
+                margin: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="ide-container">
+        <div class="header">
+            <h1><span class="logo">Simple</span> Language IDE</h1>
+            <div class="status">
+                <span class="status-indicator ready" id="statusIndicator"></span>
+                <span id="statusText">Pronto</span>
+            </div>
+        </div>
+
+        <div class="toolbar">
+            <button class="btn success" onclick="executeSynchronous()">
+                ▶️ Executar
+            </button>
+            <button class="btn warning" onclick="executeInteractive()">
+                🔄 Executar Interativo
+            </button>
+            <button class="btn danger" onclick="stopExecution()" id="stopBtn" disabled>
+                ⏹️ Parar
+            </button>
+            <div class="examples-dropdown">
+                <button class="btn" onclick="toggleExamples()">
+                    📁 Exemplos
+                </button>
+                <div class="examples-menu" id="examplesMenu">
+                    <!-- Exemplos serão carregados aqui -->
+                </div>
+            </div>
+            <button class="btn" onclick="clearAll()">
+                🗑️ Limpar
+            </button>
+        </div>
+
+        <div class="main-content">
+            <div class="left-panel">
+                <div class="panel-header">
+                    Editor de Código
+                    <span style="font-size: 12px; color: #6c757d;">Linguagem Simple</span>
+                </div>
+                <div class="code-editor">
+                    <textarea id="editor" placeholder="Digite seu código Simple aqui...
+Exemplo:
+10 input a
+20 input b  
+30 let c = a + b
+40 print c
+50 end"></textarea>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <div class="tabs">
+                    <div class="tab active" onclick="switchTab('output')">Saída</div>
+                    <div class="tab" onclick="switchTab('ast')">AST</div>
+                    <div class="tab" onclick="switchTab('tokens')">Tokens</div>
+                </div>
+
+                <div class="input-prompt" id="inputPrompt">
+                    <span id="promptText">? </span>
+                    <input type="text" id="inputField" placeholder="Digite um número...">
+                    <button class="btn" onclick="sendInput()">Enviar</button>
+                </div>
+
+                <div class="tab-content">
+                    <div id="outputContent" class="output"></div>
+                    <div id="astContent" class="ast-view" style="display: none;"></div>
+                    <div id="tokensContent" class="output" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <span id="statusMessage">Pronto para programar</span>
+            <span id="cursorPosition">Linha: 1, Coluna: 1</span>
+        </div>
+    </div>
+
+    <script>
+        let currentWebSocket = null;
+        let currentTab = 'output';
+        let isExecuting = false;
+        let examples = {};
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', function() {
+            setupEditor();
+            loadExamples();
+            updateLineNumbers();
+        });
+
+        function setupEditor() {
+            const editor = document.getElementById('editor');
+            
+            editor.addEventListener('input', function() {
+                updateLineNumbers();
+                updateCursorPosition();
+            });
+
+            editor.addEventListener('keydown', function(e) {
+                updateCursorPosition();
+            });
+
+            editor.addEventListener('click', function(e) {
+                updateCursorPosition();
+            });
+
+            // Auto-indent
+            editor.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const cursorPos = editor.selectionStart;
+                    const textBefore = editor.value.substring(0, cursorPos);
+                    const textAfter = editor.value.substring(cursorPos);
+                    
+                    editor.value = textBefore + '\n' + textAfter;
+                    editor.selectionStart = editor.selectionEnd = cursorPos + 1;
+                    updateLineNumbers();
+                }
+            });
+        }
+
+        function updateLineNumbers() {
+            const editor = document.getElementById('editor');
+            const lineNumbers = document.getElementById('lineNumbers');
+            const lines = editor.value.split('\n');
+            
+            let lineNumbersHTML = '';
+            for (let i = 1; i <= lines.length; i++) {
+                lineNumbersHTML += i + '\n';
+            }
+            
+            lineNumbers.textContent = lineNumbersHTML.trim();
+        }
+
+        function updateCursorPosition() {
+            const editor = document.getElementById('editor');
+            const cursorPosition = document.getElementById('cursorPosition');
+            
+            const textBeforeCursor = editor.value.substring(0, editor.selectionStart);
+            const lines = textBeforeCursor.split('\n');
+            const line = lines.length;
+            const column = lines[lines.length - 1].length + 1;
+            
+            cursorPosition.textContent = `Linha: ${line}, Coluna: ${column}`;
+        }
+
+        async function loadExamples() {
+            try {
+                const response = await fetch('/api/examples');
+                examples = await response.json();
+                
+                const menu = document.getElementById('examplesMenu');
+                menu.innerHTML = '';
+                
+                for (const [key, example] of Object.entries(examples)) {
+                    const item = document.createElement('div');
+                    item.className = 'example-item';
+                    item.textContent = example.name;
+                    item.onclick = () => loadExample(key);
+                    menu.appendChild(item);
+                }
+            } catch (error) {
+                console.error('Erro ao carregar exemplos:', error);
+            }
+        }
+
+        function toggleExamples() {
+            const menu = document.getElementById('examplesMenu');
+            menu.classList.toggle('show');
+        }
+
+        function loadExample(key) {
+            const example = examples[key];
+            if (example) {
+                document.getElementById('editor').value = example.code;
+                updateLineNumbers();
+                updateStatus('ready', `Exemplo carregado: ${example.name}`);
+            }
+            toggleExamples();
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Show/hide content
+            document.getElementById('outputContent').style.display = tab === 'output' ? 'block' : 'none';
+            document.getElementById('astContent').style.display = tab === 'ast' ? 'block' : 'none';
+            document.getElementById('tokensContent').style.display = tab === 'tokens' ? 'block' : 'none';
+        }
+
+        function updateStatus(type, message) {
+            const indicator = document.getElementById('statusIndicator');
+            const text = document.getElementById('statusText');
+            const statusMessage = document.getElementById('statusMessage');
+            
+            indicator.className = `status-indicator ${type}`;
+            text.textContent = getStatusText(type);
+            statusMessage.textContent = message;
+        }
+
+        function getStatusText(type) {
+            const statusTexts = {
+                ready: 'Pronto',
+                compiling: 'Compilando',
+                running: 'Executando',
+                error: 'Erro'
+            };
+            return statusTexts[type] || 'Desconhecido';
+        }
+
+        async function compile() {
+            const code = document.getElementById('editor').value;
+            
+            if (!code.trim()) {
+                updateStatus('error', 'Código vazio');
+                return;
+            }
+
+            updateStatus('compiling', 'Compilando código...');
+            
+            try {
+                const response = await fetch('/api/compile', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ code })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateStatus('ready', 'Compilação bem-sucedida');
+                    displayOutput('✅ Código compilado com sucesso!', 'success');
+                    
+                    // Mostrar AST
+                    if (result.ast) {
+                        displayAST(result.ast);
+                    }
+                    
+                    // Mostrar tokens
+                    if (result.tokens) {
+                        displayTokens(result.tokens);
+                    }
+                } else {
+                    updateStatus('error', 'Erro de compilação');
+                    displayOutput('❌ Erros de compilação:\n' + result.errors.join('\n'), 'error');
+                }
+            } catch (error) {
+                updateStatus('error', 'Erro de comunicação');
+                displayOutput('❌ Erro de comunicação: ' + error.message, 'error');
+            }
+        }
+
+        async function executeSynchronous() {
+            const code = document.getElementById('editor').value;
+            
+            if (!code.trim()) {
+                updateStatus('error', 'Código vazio');
+                return;
+            }
+
+            updateStatus('running', 'Executando código...');
+            clearOutput();
+            
+            try {
+                const response = await fetch('/api/execute', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ code })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateStatus('ready', 'Execução concluída');
+                    if (result.output) {
+                        displayOutput('📤 Saída do programa:\n' + result.output, 'success');
+                        compile()
+                    } else {
+                        displayOutput('✅ Programa executado com sucesso (sem saída)', 'success');
+                        compile()
+                    }
+                } else {
+                    updateStatus('error', 'Erro de execução');
+                    displayOutput('❌ Erro de execução:\n' + result.error, 'error');
+                }
+            } catch (error) {
+                updateStatus('error', 'Erro de comunicação');
+                displayOutput('❌ Erro de comunicação: ' + error.message, 'error');
+            }
+        }
+
+        async function executeInteractive() {
+            const code = document.getElementById('editor').value;
+            
+            if (!code.trim()) {
+                updateStatus('error', 'Código vazio');
+                return;
+            }
+
+            if (currentWebSocket) {
+                currentWebSocket.close();
+            }
+
+            updateStatus('running', 'Iniciando execução interativa...');
+            clearOutput();
+            isExecuting = true;
+            document.getElementById('stopBtn').disabled = false;
+
+            try {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${protocol}//${window.location.host}/api/execute-interactive`;
+                
+                currentWebSocket = new WebSocket(wsUrl);
+                
+                currentWebSocket.onopen = function() {
+                    updateStatus('running', 'Executando código interativo...');
+                    currentWebSocket.send(JSON.stringify({ code }));
+                };
+                
+                currentWebSocket.onmessage = function(event) {
+                    const data = JSON.parse(event.data);
+                    console.log('Mensagem WebSocket recebida:', data); // Debug
+                    
+                    switch (data.type) {
+                        case 'execution_started':
+                            displayOutput('🚀 Execução iniciada...', 'success');
+                            break;
+                            
+                        case 'output':
+                            displayOutput(data.data);
+                            break;
+                            
+                        case 'input_request':
+                            console.log('Solicitação de input para variável:', data.variable); // Debug
+                            showInputPrompt(data.message, data.variable);
+                            break;
+                            
+                        case 'execution_finished':
+                            if (data.success) {
+                                displayOutput('\n✅ Execução concluída com sucesso', 'success');
+                                updateStatus('ready', 'Execução concluída');
+                                compile()
+                            } else {
+                                console.error('Erro de execução:', data.error); // Debug
+                                displayOutput('\n❌ Execução falhou: ' + (data.error || 'Erro desconhecido'), 'error');
+                                updateStatus('error', 'Erro de execução');
+                            }
+                            stopExecution();
+                            break;
+                            
+                        case 'error':
+                            console.error('Erro WebSocket:', data.message); // Debug
+                            displayOutput('\n❌ Erro: ' + data.message, 'error');
+                            updateStatus('error', 'Erro de execução');
+                            stopExecution();
+                            break;
+                            
+                        default:
+                            console.warn('Tipo de mensagem desconhecido:', data.type); // Debug
+                    }
+                };
+                
+                currentWebSocket.onclose = function() {
+                    if (isExecuting) {
+                        updateStatus('ready', 'Execução interrompida');
+                        displayOutput('\n⚠️ Conexão fechada', 'error');
+                        stopExecution();
+                    }
+                };
+                
+                currentWebSocket.onerror = function(error) {
+                    updateStatus('error', 'Erro de WebSocket');
+                    displayOutput('\n❌ Erro de WebSocket: ' + error, 'error');
+                    stopExecution();
+                };
+                
+            } catch (error) {
+                updateStatus('error', 'Erro ao conectar');
+                displayOutput('❌ Erro ao conectar: ' + error.message, 'error');
+                stopExecution();
+            }
+        }
+
+        function stopExecution() {
+            if (currentWebSocket) {
+                currentWebSocket.send(JSON.stringify({ type: 'stop' }));
+                currentWebSocket.close();
+                currentWebSocket = null;
+            }
+            
+            isExecuting = false;
+            document.getElementById('stopBtn').disabled = true;
+            hideInputPrompt();
+            
+            if (document.getElementById('statusIndicator').className.includes('running')) {
+                updateStatus('ready', 'Execução interrompida');
+            }
+        }
+
+        function showInputPrompt(message, variable) {
+            const prompt = document.getElementById('inputPrompt');
+            const promptText = document.getElementById('promptText');
+            const inputField = document.getElementById('inputField');
+            
+            promptText.textContent = message || '? ';
+            inputField.value = '';
+            inputField.placeholder = `Digite valor para '${variable}'`;
+            prompt.style.display = 'flex';
+            inputField.focus();
+            
+            // Enter key support
+            inputField.onkeydown = function(e) {
+                if (e.key === 'Enter') {
+                    sendInput();
+                }
+            };
+        }
+
+        function hideInputPrompt() {
+            const prompt = document.getElementById('inputPrompt');
+            prompt.style.display = 'none';
+        }
+
+        function sendInput() {
+            const inputField = document.getElementById('inputField');
+            const value = inputField.value.trim();
+            
+            if (!value) {
+                inputField.focus();
+                return;
+            }
+            
+            // Validar se é um número
+            if (!/^-?\d+$/.test(value)) {
+                alert('Por favor, digite apenas números inteiros');
+                inputField.focus();
+                return;
+            }
+            
+            if (currentWebSocket && currentWebSocket.readyState === WebSocket.OPEN) {
+                console.log('Enviando input:', value); // Debug
+                currentWebSocket.send(JSON.stringify({
+                    type: 'input',
+                    value: value
+                }));
+            } else {
+                console.error('WebSocket não está conectado'); // Debug
+                displayOutput('❌ Erro: Conexão perdida', 'error');
+                return;
+            }
+            
+            displayOutput(`> ${value}`, 'input');
+            hideInputPrompt();
+        }
+
+        function displayOutput(text, type = '') {
+            const output = document.getElementById('outputContent');
+            const div = document.createElement('div');
+            div.className = type;
+            div.textContent = text;
+            output.appendChild(div);
+            output.scrollTop = output.scrollHeight;
+            
+            // Switch to output tab if not already there
+            if (currentTab !== 'output') {
+                switchTab('output');
+                document.querySelector('.tab').click();
+            }
+        }
+
+        function clearOutput() {
+            document.getElementById('outputContent').innerHTML = '';
+            document.getElementById('astContent').innerHTML = '';
+            document.getElementById('tokensContent').innerHTML = '';
+        }
+
+        function clearAll() {
+            document.getElementById('editor').value = '';
+            clearOutput();
+            updateLineNumbers();
+            updateStatus('ready', 'Tudo limpo');
+        }
+
+        function displayAST(ast) {
+            const astContent = document.getElementById('astContent');
+            astContent.innerHTML = '';
+            
+            function renderNode(node, depth = 0) {
+                const div = document.createElement('div');
+                div.className = 'ast-node';
+                div.style.marginLeft = (depth * 20) + 'px';
+                
+                let content = `<span class="ast-node-type">${node.type}</span>`;
+                
+                if (node.type === 'Program') {
+                    content += ` (${Object.keys(node.lines).length} linhas)`;
+                    astContent.appendChild(div);
+                    div.innerHTML = content;
+                    
+                    // Render lines
+                    for (const [lineNum, lineNode] of Object.entries(node.lines)) {
+                        const lineDiv = document.createElement('div');
+                        lineDiv.className = 'ast-node';
+                        lineDiv.style.marginLeft = ((depth + 1) * 20) + 'px';
+                        lineDiv.innerHTML = `<span class="ast-node-type">Linha ${lineNum}:</span>`;
+                        astContent.appendChild(lineDiv);
+                        renderNode(lineNode, depth + 2);
+                    }
+                } else {
+                    // Add specific node information
+                    if (node.var) content += ` var: <span class="ast-node-value">${node.var}</span>`;
+                    if (node.value !== undefined) content += ` value: <span class="ast-node-value">${node.value}</span>`;
+                    if (node.name) content += ` name: <span class="ast-node-value">${node.name}</span>`;
+                    if (node.op) content += ` op: <span class="ast-node-value">${node.op}</span>`;
+                    if (node.target) content += ` target: <span class="ast-node-value">${node.target}</span>`;
+                    if (node.line) content += ` (linha ${node.line})`;
+                    
+                    div.innerHTML = content;
+                    astContent.appendChild(div);
+                    
+                    // Render child nodes
+                    if (node.expr) renderNode(node.expr, depth + 1);
+                    if (node.left) renderNode(node.left, depth + 1);
+                    if (node.right) renderNode(node.right, depth + 1);
+                }
+            }
+            
+            renderNode(ast);
+        }
+
+        function displayTokens(tokens) {
+            const tokensContent = document.getElementById('tokensContent');
+            tokensContent.innerHTML = '';
+            
+            tokens.forEach((token, index) => {
+                const div = document.createElement('div');
+                div.style.marginBottom = '5px';
+                div.innerHTML = `<strong>${index + 1}.</strong> ${token.type} ` +
+                    `<span style="color: #27ae60;">"${token.value}"</span> ` +
+                    `<span style="color: #7f8c8d;">(${token.line}:${token.column})</span>`;
+                tokensContent.appendChild(div);
+            });
+        }
+
+        // Close examples menu when clicking outside
+        document.addEventListener('click', function(event) {
+            const dropdown = document.querySelector('.examples-dropdown');
+            const menu = document.getElementById('examplesMenu');
+            
+            if (!dropdown.contains(event.target)) {
+                menu.classList.remove('show');
+            }
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey) {
+                switch (e.key) {
+                    case 'Enter':
+                        e.preventDefault();
+                        if (e.shiftKey) {
+                            executeInteractive();
+                        } else {
+                            executeSynchronous();
+                        }
+                        break;
+                    case 's':
+                        e.preventDefault();
+                        compile();
+                        break;
+                    case 'l':
+                        e.preventDefault();
+                        clearAll();
+                        break;
+                }
+            }
+            
+            if (e.key === 'Escape' && isExecuting) {
+                stopExecution();
+            }
+        });
+    </script>
+</body>
+</html>
