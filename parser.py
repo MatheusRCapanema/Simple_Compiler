@@ -34,26 +34,27 @@ class Parser:
         return token
 
     def parse_expression(self):
+
+        left = self.parse_term()
+        
+        while self.current_token and self.current_token.type == TokenType.OP_ARITH and \
+              self.current_token.value in ('+', '-'):
+            op = self.current_token.value
+            self.advance()
+            right = self.parse_term()
+            left = BinaryOp(left, op, right)
+        
+        return left
+
+    def parse_term(self):
         left = self.parse_factor()
         
-        if (self.current_token and 
-            self.current_token.type == TokenType.OP_ARITH and 
-            self.current_token.value in ('+', '-', '*', '/', '%')):
-            
+        while self.current_token and self.current_token.type == TokenType.OP_ARITH and \
+              self.current_token.value in ('*', '/', '%'):
             op = self.current_token.value
             self.advance()
             right = self.parse_factor()
-            
-
-            if (self.current_token and 
-                self.current_token.type == TokenType.OP_ARITH and 
-                self.current_token.value in ('+', '-', '*', '/', '%')):
-                raise SyntaxError(
-                    f"Linha {self.current_token.line}:{self.current_token.column} - "
-                    f"Múltiplas operações não são permitidas. Use apenas uma operação por expressão."
-                )
-            
-            return BinaryOp(left, op, right)
+            left = BinaryOp(left, op, right)
         
         return left
 
@@ -61,6 +62,7 @@ class Parser:
         if not self.current_token:
             raise SyntaxError("Fim inesperado do arquivo durante análise de expressão")
         
+        # Handle unary minus
         if self.current_token.type == TokenType.OP_ARITH and self.current_token.value == '-':
             self.advance()
             factor = self.parse_factor()
@@ -68,7 +70,7 @@ class Parser:
         
         if self.current_token.type == TokenType.OP_ARITH and self.current_token.value == '+':
             self.advance()
-            return self.parse_factor()  
+            return self.parse_factor()
             
         if self.current_token.type == TokenType.NUMBER:
             value = self.current_token.value
@@ -138,6 +140,7 @@ class Parser:
 
     def parse_program(self):
         lines = {}
+        previous_line_number = 0
         
         while self.current_token and self.current_token.type != TokenType.EOF:
             if self.current_token.type != TokenType.LINE_NUMBER:
@@ -146,6 +149,22 @@ class Parser:
                     f"Esperado número de linha"
                 )
             line_number = self.current_token.value
+            
+            if line_number <= previous_line_number:
+                raise SyntaxError(
+                    f"Linha {self.current_token.line}:{self.current_token.column} - "
+                    f"Número de linha {line_number} deve ser maior que o anterior ({previous_line_number}). "
+                    f"Os números de linha devem estar em ordem crescente."
+                )
+            
+            if line_number in lines:
+                raise SyntaxError(
+                    f"Linha {self.current_token.line}:{self.current_token.column} - "
+                    f"Número de linha {line_number} já foi usado. "
+                    f"Cada linha deve ter um número único."
+                )
+            
+            previous_line_number = line_number
             self.advance()
             
             statement = self.parse_statement(line_number)
@@ -153,14 +172,6 @@ class Parser:
             
             while self.current_token and self.current_token.type == TokenType.NEWLINE:
                 self.advance()
-        
-        line_numbers = sorted(lines.keys())
-        for i in range(1, len(line_numbers)):
-            if line_numbers[i] <= line_numbers[i-1]:
-                raise SyntaxError(
-                    f"Números de linha devem estar em ordem crescente: "
-                    f"{line_numbers[i-1]} seguido por {line_numbers[i]}"
-                )
         
         return Program(lines)
 
