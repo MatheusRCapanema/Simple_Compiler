@@ -33,44 +33,53 @@ class Parser:
         self.advance()
         return token
 
-    def parse_expression(self):
-
-        left = self.parse_term()
+    def parse_simple_expression(self):
+        """
+        Parse uma expressão simples que pode ter no máximo UMA operação:
+        - NUMBER
+        - VARIABLE  
+        - VARIABLE OP VARIABLE
+        - VARIABLE OP NUMBER
+        - NUMBER OP VARIABLE
+        - NUMBER OP NUMBER
+        - Unário: -NUMBER ou -VARIABLE
+        """
+        if self.current_token and self.current_token.type == TokenType.OP_ARITH and self.current_token.value == '-':
+            self.advance()
+            operand = self.parse_operand()
+            return BinaryOp(Number(0), '-', operand)
         
-        while self.current_token and self.current_token.type == TokenType.OP_ARITH and \
-              self.current_token.value in ('+', '-'):
+        if self.current_token and self.current_token.type == TokenType.OP_ARITH and self.current_token.value == '+':
+            self.advance()
+            return self.parse_operand()
+        
+        left = self.parse_operand()
+        
+        if (self.current_token and 
+            self.current_token.type == TokenType.OP_ARITH and 
+            self.current_token.value in ('+', '-', '*', '/', '%')):
+            
             op = self.current_token.value
             self.advance()
-            right = self.parse_term()
-            left = BinaryOp(left, op, right)
+            right = self.parse_operand()
+            
+            if (self.current_token and 
+                self.current_token.type == TokenType.OP_ARITH and 
+                self.current_token.value in ('+', '-', '*', '/', '%')):
+                raise SyntaxError(
+                    f"Linha {self.current_token.line}:{self.current_token.column} - "
+                    f"Expressão muito complexa: apenas uma operação é permitida por expressão. "
+                    f"Use variáveis intermediárias para expressões complexas."
+                )
+            
+            return BinaryOp(left, op, right)
         
         return left
 
-    def parse_term(self):
-        left = self.parse_factor()
-        
-        while self.current_token and self.current_token.type == TokenType.OP_ARITH and \
-              self.current_token.value in ('*', '/', '%'):
-            op = self.current_token.value
-            self.advance()
-            right = self.parse_factor()
-            left = BinaryOp(left, op, right)
-        
-        return left
-
-    def parse_factor(self):
+    def parse_operand(self):
+        """Parse um operando simples (NUMBER ou VARIABLE)"""
         if not self.current_token:
             raise SyntaxError("Fim inesperado do arquivo durante análise de expressão")
-        
-        # Handle unary minus
-        if self.current_token.type == TokenType.OP_ARITH and self.current_token.value == '-':
-            self.advance()
-            factor = self.parse_factor()
-            return BinaryOp(Number(0), '-', factor)
-        
-        if self.current_token.type == TokenType.OP_ARITH and self.current_token.value == '+':
-            self.advance()
-            return self.parse_factor()
             
         if self.current_token.type == TokenType.NUMBER:
             value = self.current_token.value
@@ -84,8 +93,12 @@ class Parser:
             token_info = f"{self.current_token.type.name}('{self.current_token.value}')" if self.current_token else "None"
             raise SyntaxError(
                 f"Linha {self.current_token.line if self.current_token else '?'}:{self.current_token.column if self.current_token else '?'} - "
-                f"Expressão inválida: encontrado {token_info}, esperado NUMBER ou ID"
+                f"Expressão inválida: encontrado {token_info}, esperado NUMBER ou VARIABLE"
             )
+
+    def parse_expression(self):
+        """Alias para parse_simple_expression para compatibilidade"""
+        return self.parse_simple_expression()
 
     def parse_statement(self, line_number):
         if self.current_token.type == TokenType.REM:
@@ -106,7 +119,7 @@ class Parser:
             self.advance()
             var = self.expect(TokenType.ID).value
             self.expect(TokenType.OP_ARITH, '=')
-            expr = self.parse_expression()
+            expr = self.parse_simple_expression()
             return LetStatement(var, expr, line_number)
         
         elif self.current_token.type == TokenType.GOTO:
@@ -116,11 +129,11 @@ class Parser:
         
         elif self.current_token.type == TokenType.IF:
             self.advance()
-            left = self.parse_expression()
+            left = self.parse_simple_expression()
             
             op = self.expect(TokenType.OP_REL).value
             
-            right = self.parse_expression()
+            right = self.parse_simple_expression()
             
             self.expect(TokenType.GOTO_KEYWORD, 'goto')
             

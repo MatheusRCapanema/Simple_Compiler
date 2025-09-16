@@ -99,26 +99,38 @@ class Lexer:
                 continue
             
             if self.current_char.isalpha():
-                word = self.identifier().lower()
-                if word == 'input':
+                word = self.identifier()
+                word_lower = word.lower()
+                
+                if word_lower == 'input':
                     tokens.append(Token(TokenType.INPUT, 'input', start_line, start_column))
-                elif word == 'let':
+                elif word_lower == 'let':
                     tokens.append(Token(TokenType.LET, 'let', start_line, start_column))
-                elif word == 'print':
+                elif word_lower == 'print':
                     tokens.append(Token(TokenType.PRINT, 'print', start_line, start_column))
-                elif word == 'goto':
+                elif word_lower == 'goto':
                     if in_if_statement:
                         tokens.append(Token(TokenType.GOTO_KEYWORD, 'goto', start_line, start_column))
                     else:
                         tokens.append(Token(TokenType.GOTO, 'goto', start_line, start_column))
-                elif word == 'if':
+                elif word_lower == 'if':
                     tokens.append(Token(TokenType.IF, 'if', start_line, start_column))
                     in_if_statement = True
-                elif word == 'end':
+                elif word_lower == 'end':
                     tokens.append(Token(TokenType.END, 'end', start_line, start_column))
                 else:
                     if len(word) == 1 and word.islower():
                         tokens.append(Token(TokenType.ID, word, start_line, start_column))
+                    elif len(word) == 1 and word.isupper():
+                        raise SyntaxError(
+                            f"Linha {self.line}:{self.column} - "
+                            f"Identificador inválido: '{word}' (deve ser uma letra minúscula, não maiúscula)"
+                        )
+                    elif len(word) > 1:
+                        raise SyntaxError(
+                            f"Linha {self.line}:{self.column} - "
+                            f"Identificador inválido: '{word}' (deve ser apenas 1 letra minúscula)"
+                        )
                     else:
                         raise SyntaxError(
                             f"Linha {self.line}:{self.column} - "

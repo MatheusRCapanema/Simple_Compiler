@@ -12,7 +12,7 @@ from io import StringIO
 import sys
 import os
 
-# Importar seus módulos existentes
+
 from lexer import Lexer
 from parser import Parser, SemanticAnalyzer
 from interpreter import Interpreter
@@ -20,7 +20,7 @@ from errors import SimpleSyntaxError, SemanticError
 
 app = FastAPI(title="Simple Language IDE", version="1.0.0")
 
-# Modelos Pydantic
+
 class CodeRequest(BaseModel):
     code: str
 
@@ -36,10 +36,10 @@ class ExecuteResponse(BaseModel):
     error: Optional[str] = None
     execution_id: Optional[str] = None
 
-# Armazenar execuções ativas
+
 active_executions: Dict[str, Dict[str, Any]] = {}
 
-# Classe personalizada do interpretador para execução web
+
 class WebInterpreter(Interpreter):
     def __init__(self, program, websocket=None):
         super().__init__(program)
@@ -49,7 +49,6 @@ class WebInterpreter(Interpreter):
         self.waiting_for_input = False
 
     async def run_async(self):
-        # Importar classes AST necessárias
         from meu_ast import InputStatement, PrintStatement, LetStatement
         from meu_ast import GotoStatement, IfGotoStatement, EndStatement, RemStatement
         
@@ -58,7 +57,7 @@ class WebInterpreter(Interpreter):
                 line_num = self.line_numbers[self.pc]
                 stmt = self.program.lines[line_num]
                 
-                print(f"[DEBUG] Executando linha {line_num}: {type(stmt).__name__}")  # Debug
+                print(f"[DEBUG] Executando linha {line_num}: {type(stmt).__name__}")
                 
                 if isinstance(stmt, InputStatement):
                     await self._handle_input_async(stmt)
@@ -89,11 +88,10 @@ class WebInterpreter(Interpreter):
                 else:
                     raise RuntimeError(f"Comando desconhecido na linha {line_num}")
                     
-                # Pequeno delay para permitir cancelamento
                 await asyncio.sleep(0.001)
                 
         except Exception as e:
-            print(f"[DEBUG] Exceção durante execução: {type(e).__name__}: {e}")  # Debug
+            print(f"[DEBUG] Exceção durante execução: {type(e).__name__}: {e}")
             await self._output(f"ERRO DE EXECUÇÃO: {e}")
             raise
 
@@ -106,9 +104,7 @@ class WebInterpreter(Interpreter):
                 "variable": stmt.var
             })
             try:
-                # Aguardar input do usuário
                 input_value = await asyncio.wait_for(self.input_queue.get(), timeout=30.0)
-                # Converter para string e depois tentar converter para int
                 input_str = str(input_value).strip()
                 if not input_str:
                     raise ValueError("Entrada vazia")
@@ -125,7 +121,6 @@ class WebInterpreter(Interpreter):
                 await self._output("ERRO: Timeout - muito tempo sem resposta")
                 raise RuntimeError("Timeout na entrada de dados")
         else:
-            # Execução síncrona (fallback)
             raise RuntimeError("Input não suportado em execução síncrona")
 
     async def _output(self, text):
@@ -139,7 +134,6 @@ class WebInterpreter(Interpreter):
     async def provide_input(self, value):
         await self.input_queue.put(value)
 
-# Importar suas classes AST
 from meu_ast import *
 
 def ast_to_dict(node):
@@ -193,19 +187,15 @@ def ast_to_dict(node):
 async def compile_code(request: CodeRequest):
     """Compila o código Simple e retorna tokens e AST"""
     try:
-        # Lexical analysis
         lexer = Lexer(request.code)
         tokens = lexer.tokenize()
         
-        # Syntax analysis
         parser = Parser(tokens)
         program = parser.parse_program()
         
-        # Semantic analysis
         analyzer = SemanticAnalyzer(program)
         analyzer.analyze()
         
-        # Converter tokens para formato serializável
         token_list = []
         for token in tokens:
             token_list.append({
@@ -231,7 +221,6 @@ async def compile_code(request: CodeRequest):
 async def execute_code(request: CodeRequest):
     """Executa o código Simple de forma síncrona (sem input interativo)"""
     try:
-        # Compilar primeiro
         lexer = Lexer(request.code)
         tokens = lexer.tokenize()
         parser = Parser(tokens)
@@ -239,15 +228,12 @@ async def execute_code(request: CodeRequest):
         analyzer = SemanticAnalyzer(program)
         analyzer.analyze()
         
-        # Executar com captura de saída
         output_buffer = StringIO()
         error_buffer = StringIO()
         
         with redirect_stdout(output_buffer), redirect_stderr(error_buffer):
-            # Para execução síncrona, vamos usar o interpretador original
             interpreter = Interpreter(program)
             
-            # Sobrescrever método de input para execução web
             original_input = __builtins__['input']
             def mock_input(prompt):
                 raise RuntimeError("Input interativo não suportado em execução síncrona. Use execução WebSocket.")
@@ -282,35 +268,33 @@ async def execute_interactive(websocket: WebSocket):
         try:
             while True:
                 data = await websocket.receive_json()
-                print(f"[DEBUG] Mensagem recebida: {data}")  # Debug
+                print(f"[DEBUG] Mensagem recebida: {data}")
                 
                 if data.get("type") == "input":
                     input_value = data.get("value", "")
-                    print(f"[DEBUG] Input recebido: {repr(input_value)}")  # Debug
+                    print(f"[DEBUG] Input recebido: {repr(input_value)}")
                     if interpreter and interpreter.waiting_for_input:
                         await interpreter.provide_input(input_value)
                     else:
-                        print(f"[DEBUG] Input recebido mas interpretador não está aguardando")  # Debug
+                        print(f"[DEBUG] Input recebido mas interpretador não está aguardando")
                 elif data.get("type") == "stop":
-                    print(f"[DEBUG] Comando de parada recebido")  # Debug
+                    print(f"[DEBUG] Comando de parada recebido")
                     if interpreter:
                         interpreter.should_stop = True
                     break
         except WebSocketDisconnect:
-            print(f"[DEBUG] WebSocket desconectado no handler")  # Debug
+            print(f"[DEBUG] WebSocket desconectado no handler")
             if interpreter:
                 interpreter.should_stop = True
         except Exception as e:
-            print(f"[DEBUG] Erro no message handler: {e}")  # Debug
+            print(f"[DEBUG] Erro no message handler: {e}")
     
     try:
-        # Receber código inicial
         data = await websocket.receive_json()
         code = data.get("code", "")
         
-        print(f"[DEBUG] Recebido código para execução: {repr(code)}")  # Debug
+        print(f"[DEBUG] Recebido código para execução: {repr(code)}")
         
-        # Compilar
         lexer = Lexer(code)
         tokens = lexer.tokenize()
         parser = Parser(tokens)
@@ -318,9 +302,8 @@ async def execute_interactive(websocket: WebSocket):
         analyzer = SemanticAnalyzer(program)
         analyzer.analyze()
         
-        print(f"[DEBUG] Compilação bem-sucedida")  # Debug
+        print(f"[DEBUG] Compilação bem-sucedida")
         
-        # Criar interpretador web
         interpreter = WebInterpreter(program, websocket)
         active_executions[execution_id] = {
             "interpreter": interpreter,
@@ -332,28 +315,25 @@ async def execute_interactive(websocket: WebSocket):
             "execution_id": execution_id
         })
         
-        # Iniciar handler de mensagens em paralelo
         message_task = asyncio.create_task(message_handler())
         
-        # Executar programa
         try:
-            print(f"[DEBUG] Iniciando execução...")  # Debug
+            print(f"[DEBUG] Iniciando execução...")
             await interpreter.run_async()
-            print(f"[DEBUG] Execução concluída com sucesso")  # Debug
+            print(f"[DEBUG] Execução concluída com sucesso")
             await websocket.send_json({
                 "type": "execution_finished",
                 "success": True
             })
         except Exception as e:
-            print(f"[DEBUG] Erro durante execução: {type(e).__name__}: {e}")  # Debug
-            print(f"[DEBUG] Traceback: {traceback.format_exc()}")  # Debug
+            print(f"[DEBUG] Erro durante execução: {type(e).__name__}: {e}")
+            print(f"[DEBUG] Traceback: {traceback.format_exc()}")
             await websocket.send_json({
                 "type": "execution_finished",
                 "success": False,
                 "error": str(e)
             })
         finally:
-            # Cancelar task do message handler
             message_task.cancel()
             try:
                 await message_task
@@ -361,11 +341,11 @@ async def execute_interactive(websocket: WebSocket):
                 pass
                 
     except WebSocketDisconnect:
-        print(f"[DEBUG] WebSocket desconectado durante inicialização")  # Debug
+        print(f"[DEBUG] WebSocket desconectado durante inicialização")
         pass
     except Exception as e:
-        print(f"[DEBUG] Erro geral: {type(e).__name__}: {e}")  # Debug
-        print(f"[DEBUG] Traceback: {traceback.format_exc()}")  # Debug
+        print(f"[DEBUG] Erro geral: {type(e).__name__}: {e}")
+        print(f"[DEBUG] Traceback: {traceback.format_exc()}")
         try:
             await websocket.send_json({
                 "type": "error",
@@ -430,7 +410,6 @@ async def get_examples():
     }
     return examples
 
-# Servir arquivos estáticos (frontend)
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
 if __name__ == "__main__":

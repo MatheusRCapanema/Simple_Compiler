@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Script para iniciar a IDE Simple
 """
@@ -17,7 +16,6 @@ def main():
     print("🚀 Simple Language IDE")
     print("=" * 50)
     
-    # Verificar se os arquivos necessários existem
     required_files = [
         'main.py', 'lexer.py', 'parser.py', 
         'interpreter.py', 'meu_ast.py', 'errors.py'
@@ -35,12 +33,10 @@ def main():
         print("\nCertifique-se de ter todos os arquivos do projeto na pasta atual.")
         sys.exit(1)
     
-    # Verificar se o diretório static existe
     if not os.path.exists('static'):
         print("📁 Criando diretório static...")
         os.makedirs('static')
     
-    # Verificar se index.html existe em static
     if not os.path.exists('static/index.html'):
         print("❌ Arquivo static/index.html não encontrado!")
         print("Execute este script no diretório que contém todos os arquivos do projeto.")
@@ -49,11 +45,9 @@ def main():
     print("✅ Todos os arquivos encontrados!")
     print("🔄 Iniciando servidor FastAPI...")
     
-    # Agendar abertura do navegador
     timer = Timer(2.0, open_browser)
     timer.start()
     
-    # Executar o servidor
     try:
         import uvicorn
         uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
