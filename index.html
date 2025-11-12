@@ -5,928 +5,270 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simple Language IDE</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --primary-color: #3498db; --secondary-color: #2c3e50; --danger-color: #e74c3c;
+            --success-color: #27ae60; --warning-color: #f39c12; --info-color: #8e44ad;
+            --dark-text: #34495e; --light-text: #ecf0f1;
         }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .ide-container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            margin: 20px;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #2c3e50, #34495e);
-            color: white;
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .header h1 {
-            font-size: 24px;
-            font-weight: 300;
-        }
-
-        .header .logo {
-            font-weight: bold;
-            color: #3498db;
-        }
-
-        .toolbar {
-            background: #f8f9fa;
-            padding: 10px 20px;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            border-bottom: 1px solid #dee2e6;
-        }
-
-        .btn {
-            background: linear-gradient(135deg, #3498db, #2980b9);
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
-        }
-
-        .btn:disabled {
-            background: #bdc3c7;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        .btn.success {
-            background: linear-gradient(135deg, #27ae60, #2ecc71);
-        }
-
-        .btn.danger {
-            background: linear-gradient(135deg, #e74c3c, #c0392b);
-        }
-
-        .btn.warning {
-            background: linear-gradient(135deg, #f39c12, #e67e22);
-        }
-
-        .main-content {
-            display: flex;
-            flex: 1;
-            min-height: 0;
-        }
-
-        .left-panel {
-            width: 60%;
-            display: flex;
-            flex-direction: column;
-            border-right: 1px solid #dee2e6;
-        }
-
-        .right-panel {
-            width: 40%;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .panel-header {
-            background: #f8f9fa;
-            padding: 10px 15px;
-            font-weight: 600;
-            color: #2c3e50;
-            border-bottom: 1px solid #dee2e6;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .code-editor {
-            flex: 1;
-            position: relative;
-        }
-
-        #editor {
-            width: 100%;
-            height: 100%;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            padding: 15px;
-            border: none;
-            outline: none;
-            resize: none;
-            background: #2c3e50;
-            color: #ecf0f1;
-            line-height: 1.5;
-        }
-
-        .line-numbers {
-            position: absolute;
-            left: 0;
-            top: 15px;
-            width: 40px;
-            background: #34495e;
-            color: #7f8c8d;
-            padding: 15px 5px;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            line-height: 1.5;
-            text-align: right;
-            border-right: 1px solid #7f8c8d;
-        }
-
-        #editor {
-            padding-left: 55px;
-        }
-
-        .output-panel {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .tabs {
-            display: flex;
-            background: #f8f9fa;
-        }
-
-        .tab {
-            padding: 10px 15px;
-            cursor: pointer;
-            border-bottom: 2px solid transparent;
-            transition: all 0.3s ease;
-            color: #6c757d;
-        }
-
-        .tab.active {
-            background: white;
-            color: #2c3e50;
-            border-bottom-color: #3498db;
-        }
-
-        .tab-content {
-            flex: 1;
-            padding: 15px;
-            background: white;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
-            overflow-y: auto;
-        }
-
-        .output {
-            white-space: pre-wrap;
-            color: #2c3e50;
-        }
-
-        .error {
-            color: #e74c3c;
-        }
-
-
-        .input-prompt {
-            background: #3498db;
-            color: white;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 10px;
-            display: none;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .input-prompt input {
-            flex: 1;
-            padding: 5px 10px;
-            border: none;
-            border-radius: 3px;
-            outline: none;
-        }
-
-        .examples-dropdown {
-            position: relative;
-        }
-
-        .examples-menu {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            background: white;
-            border: 1px solid #dee2e6;
-            border-radius: 6px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            min-width: 200px;
-            z-index: 1000;
-            display: none;
-        }
-
-        .examples-menu.show {
-            display: block;
-        }
-
-        .example-item {
-            padding: 10px 15px;
-            cursor: pointer;
-            transition: background 0.3s ease;
-        }
-
-        .example-item:hover {
-            background: #f8f9fa;
-        }
-
-        .status-bar {
-            background: #2c3e50;
-            color: white;
-            padding: 8px 20px;
-            font-size: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .status-indicator {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            margin-right: 8px;
-        }
-
-        .status-indicator.ready {
-            background: #27ae60;
-        }
-
-        .status-indicator.compiling {
-            background: #f39c12;
-        }
-
-        .status-indicator.running {
-            background: #3498db;
-        }
-
-        .status-indicator.error {
-            background: #e74c3c;
-        }
-
-        .ast-view {
-            font-size: 12px;
-            color: #2c3e50;
-        }
-
-        .ast-node {
-            margin-left: 20px;
-            margin-top: 5px;
-            padding: 2px 0;
-        }
-
-        .ast-node-type {
-            color: #3498db;
-            font-weight: bold;
-        }
-
-        .ast-node-value {
-            color: #27ae60;
-        }
-
-        @media (max-width: 768px) {
-            .main-content {
-                flex-direction: column;
-            }
-
-            .left-panel, .right-panel {
-                width: 100%;
-            }
-
-            .left-panel {
-                height: 60%;
-            }
-
-            .right-panel {
-                height: 40%;
-                border-right: none;
-                border-top: 1px solid #dee2e6;
-            }
-
-            .ide-container {
-                margin: 10px;
-            }
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 100vh; display: flex; flex-direction: column; color: var(--dark-text); }
+        .ide-container { background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(10px); border-radius: 15px; margin: 20px; flex: 1; display: flex; flex-direction: column; box-shadow: 0 20px 40px rgba(0,0,0,0.1); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #2c3e50, #34495e); color: white; padding: 15px 20px; }
+        .header h1 { font-size: 24px; font-weight: 300; }
+        .header .logo { font-weight: bold; color: var(--primary-color); }
+        .toolbar { background: #fdfdfd; padding: 10px 20px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; border-bottom: 1px solid #dee2e6; }
+        .btn { background: linear-gradient(135deg, var(--primary-color), #2980b9); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; transition: all 0.3s ease; display: flex; align-items: center; gap: 5px; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3); }
+        .btn:disabled { background: #bdc3c7; cursor: not-allowed; transform: none; box-shadow: none; }
+        .btn.success { background: linear-gradient(135deg, var(--success-color), #2ecc71); }
+        .btn.danger { background: linear-gradient(135deg, var(--danger-color), #c0392b); }
+        .btn.warning { background: linear-gradient(135deg, var(--warning-color), #e67e22); }
+        .main-content { display: flex; flex: 1; min-height: 0; }
+        .left-panel { width: 55%; border-right: 1px solid #dee2e6; display: flex; flex-direction: column; }
+        .right-panel { width: 45%; display: flex; flex-direction: column; }
+        .panel-header { background: #f8f9fa; padding: 10px 15px; font-weight: 600; color: var(--secondary-color); border-bottom: 1px solid #dee2e6; }
+        #editor { width: 100%; height: 100%; flex: 1; font-family: 'Courier New', monospace; font-size: 16px; padding: 15px; border: none; outline: none; resize: none; background: var(--secondary-color); color: var(--light-text); line-height: 1.5; }
+        .tabs { display: flex; background: #f8f9fa; border-bottom: 1px solid #dee2e6;}
+        .tab { padding: 10px 15px; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.3s ease; color: #6c757d; font-weight: 500;}
+        .tab.active { color: var(--primary-color); border-bottom-color: var(--primary-color); }
+        .tab-content { flex: 1; background: white; font-family: 'Courier New', monospace; font-size: 14px; overflow-y: auto; position: relative;}
+        .output-area { padding: 15px; height: 100%; overflow-y: auto; white-space: pre-wrap; }
+        .output-area .error { color: var(--danger-color); }
+        .output-area .success { color: var(--success-color); }
+        .output-area .info { color: var(--info-color); font-weight: bold; }
+        .input-prompt { background: var(--primary-color); color: white; padding: 10px; border-radius: 5px; margin: 10px; display: none; align-items: center; gap: 10px; }
+        .input-prompt input { flex: 1; padding: 5px 10px; border: none; border-radius: 3px; outline: none; color: #333; }
+        .examples-dropdown { position: relative; }
+        .examples-menu { position: absolute; top: 100%; left: 0; background: white; border: 1px solid #dee2e6; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 200px; z-index: 1000; display: none; }
+        .examples-menu.show { display: block; }
+        .example-item { padding: 10px 15px; cursor: pointer; transition: background 0.3s ease; }
+        .example-item:hover { background: #f8f9fa; }
+        .status-bar { background: var(--secondary-color); color: white; padding: 8px 20px; font-size: 12px; }
     </style>
 </head>
 <body>
     <div class="ide-container">
-        <div class="header">
-            <h1><span class="logo">Simple</span> Language IDE</h1>
-            <div class="status">
-                <span class="status-indicator ready" id="statusIndicator"></span>
-                <span id="statusText">Pronto</span>
-            </div>
-        </div>
+        <div class="header"><h1><span class="logo">Simple</span> Language IDE</h1></div>
 
         <div class="toolbar">
-            <button class="btn success" onclick="executeSynchronous()">
-                ▶️ Executar
-            </button>
-            <button class="btn warning" onclick="executeInteractive()">
-                🔄 Executar Interativo
-            </button>
-            <button class="btn danger" onclick="stopExecution()" id="stopBtn" disabled>
-                ⏹️ Parar
-            </button>
+            <button class="btn success" onclick="execute()" title="Executa o código do editor (Simple ou SML)">▶️ Executar</button>
+            <button class="btn warning" onclick="stopExecution()" id="stopBtn" disabled>⏹️ Parar</button>
             <div class="examples-dropdown">
-                <button class="btn" onclick="toggleExamples()">
-                    📁 Exemplos
-                </button>
-                <div class="examples-menu" id="examplesMenu">
-                    <!-- Exemplos serão carregados aqui -->
-                </div>
+                <button class="btn" onclick="toggleExamples()">📁 Exemplos</button>
+                <div class="examples-menu" id="examplesMenu"></div>
             </div>
-            <button class="btn" onclick="clearAll()">
-                🗑️ Limpar
-            </button>
+            <button class="btn danger" onclick="clearAll()">🗑️ Limpar Tudo</button>
         </div>
 
         <div class="main-content">
             <div class="left-panel">
-                <div class="panel-header">
-                    Editor de Código
-                    <span style="font-size: 12px; color: #6c757d;">Linguagem Simple</span>
-                </div>
-                <div class="code-editor">
-                    <textarea id="editor" placeholder="Digite seu código Simple aqui...
-Exemplo:
-10 input a
-20 input b  
-30 let c = a + b
-40 print c
-50 end"></textarea>
-                </div>
+                <div class="panel-header">Editor de Código (Simple ou SML)</div>
+                <div id="editor" class="code-editor"></div>
             </div>
 
             <div class="right-panel">
                 <div class="tabs">
-                    <div class="tab active" onclick="switchTab('output')">Saída</div>
-                    <div class="tab" onclick="switchTab('ast')">AST</div>
-                    <div class="tab" onclick="switchTab('tokens')">Tokens</div>
-                </div>
-
-                <div class="input-prompt" id="inputPrompt">
-                    <span id="promptText">? </span>
-                    <input type="text" id="inputField" placeholder="Digite um número...">
-                    <button class="btn" onclick="sendInput()">Enviar</button>
+                    <div class="tab active" data-tab="output">Saída Simple</div>
+                    <div class="tab" data-tab="sml_output">Saída SML</div>
+                    <div class="tab" data-tab="sml">SML Traduzido</div>
+                    <div class="tab" data-tab="ast">AST</div>
+                    <div class="tab" data-tab="tokens">Tokens</div>
                 </div>
 
                 <div class="tab-content">
-                    <div id="outputContent" class="output"></div>
-                    <div id="astContent" class="ast-view" style="display: none;"></div>
-                    <div id="tokensContent" class="output" style="display: none;"></div>
+                    <div class="input-prompt" id="inputPrompt"><span id="promptText">? </span><input type="text" id="inputField"><button class="btn" onclick="sendInput()">Enviar</button></div>
+                    <div id="output" class="output-area"></div>
+                    <div id="sml_output" class="output-area" style="display: none;"><div id="smlOutputContent"></div></div>
+                    <div id="sml" class="output-area" style="display: none;"></div>
+                    <div id="ast" class="output-area" style="display: none; font-size: 12px;"></div>
+                    <div id="tokens" class="output-area" style="display: none;"></div>
                 </div>
             </div>
         </div>
-
-        <div class="status-bar">
-            <span id="statusMessage">Pronto para programar</span>
-            <span id="cursorPosition">Linha: 1, Coluna: 1</span>
-        </div>
+        <div class="status-bar" id="statusMessage">Pronto.</div>
     </div>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.0/min/vs/loader.min.js"></script>
     <script>
         let currentWebSocket = null;
-        let currentTab = 'output';
         let isExecuting = false;
-        let examples = {};
+        let editor;
 
-        // Inicializar
-        document.addEventListener('DOMContentLoaded', function() {
-            setupEditor();
+        document.addEventListener('DOMContentLoaded', () => {
+            require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.0/min/vs' }});
+            require(['vs/editor/editor.main'], () => {
+                editor = monaco.editor.create(document.getElementById('editor'), {
+                    value: '10 rem Soma dois números\n20 input a\n30 input b\n40 let c = a + b\n50 print c\n60 end',
+                    language: 'plaintext',
+                    theme: 'vs-dark',
+                    automaticLayout: true
+                });
+            });
             loadExamples();
-            updateLineNumbers();
+            setupTabs();
         });
 
-        function setupEditor() {
-            const editor = document.getElementById('editor');
-            
-            editor.addEventListener('input', function() {
-                updateLineNumbers();
-                updateCursorPosition();
-            });
-
-            editor.addEventListener('keydown', function(e) {
-                updateCursorPosition();
-            });
-
-            editor.addEventListener('click', function(e) {
-                updateCursorPosition();
-            });
-
-            // Auto-indent
-            editor.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const cursorPos = editor.selectionStart;
-                    const textBefore = editor.value.substring(0, cursorPos);
-                    const textAfter = editor.value.substring(cursorPos);
-                    
-                    editor.value = textBefore + '\n' + textAfter;
-                    editor.selectionStart = editor.selectionEnd = cursorPos + 1;
-                    updateLineNumbers();
-                }
+        function setupTabs() {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    e.target.classList.add('active');
+                    document.querySelectorAll('.output-area').forEach(c => c.style.display = 'none');
+                    document.getElementById(e.target.dataset.tab).style.display = 'block';
+                });
             });
         }
-
-        function updateLineNumbers() {
-            const editor = document.getElementById('editor');
-            const lineNumbers = document.getElementById('lineNumbers');
-            const lines = editor.value.split('\n');
-            
-            let lineNumbersHTML = '';
-            for (let i = 1; i <= lines.length; i++) {
-                lineNumbersHTML += i + '\n';
-            }
-            
-            lineNumbers.textContent = lineNumbersHTML.trim();
+        
+        function displayInTab(tabId, content, type = '') {
+            const container = document.getElementById(tabId);
+            const contentArea = tabId === 'sml_output' ? document.getElementById('smlOutputContent') : container;
+            const div = document.createElement('div');
+            if (type) div.className = type;
+            div.textContent = content;
+            contentArea.appendChild(div);
+            container.scrollTop = container.scrollHeight;
         }
-
-        function updateCursorPosition() {
-            const editor = document.getElementById('editor');
-            const cursorPosition = document.getElementById('cursorPosition');
-            
-            const textBeforeCursor = editor.value.substring(0, editor.selectionStart);
-            const lines = textBeforeCursor.split('\n');
-            const line = lines.length;
-            const column = lines[lines.length - 1].length + 1;
-            
-            cursorPosition.textContent = `Linha: ${line}, Coluna: ${column}`;
+        
+        function clearTabs(...tabIds) {
+            tabIds.forEach(id => {
+                const el = id === 'sml_output' ? document.getElementById('smlOutputContent') : document.getElementById(id);
+                if(el) el.innerHTML = '';
+            });
+        }
+        
+        function clearAll() {
+            if(editor) editor.setValue('');
+            clearTabs('output', 'sml_output', 'sml', 'ast', 'tokens');
+            updateStatus('Pronto.');
         }
 
         async function loadExamples() {
-            try {
-                const response = await fetch('/api/examples');
-                examples = await response.json();
-                
-                const menu = document.getElementById('examplesMenu');
-                menu.innerHTML = '';
-                
-                for (const [key, example] of Object.entries(examples)) {
-                    const item = document.createElement('div');
-                    item.className = 'example-item';
-                    item.textContent = example.name;
-                    item.onclick = () => loadExample(key);
-                    menu.appendChild(item);
-                }
-            } catch (error) {
-                console.error('Erro ao carregar exemplos:', error);
-            }
-        }
-
-        function toggleExamples() {
+            const response = await fetch('/api/examples');
+            const examples = await response.json();
             const menu = document.getElementById('examplesMenu');
-            menu.classList.toggle('show');
-        }
-
-        function loadExample(key) {
-            const example = examples[key];
-            if (example) {
-                document.getElementById('editor').value = example.code;
-                updateLineNumbers();
-                updateStatus('ready', `Exemplo carregado: ${example.name}`);
-            }
-            toggleExamples();
-        }
-
-        function switchTab(tab) {
-            currentTab = tab;
-            
-            // Update tab buttons
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            event.target.classList.add('active');
-            
-            // Show/hide content
-            document.getElementById('outputContent').style.display = tab === 'output' ? 'block' : 'none';
-            document.getElementById('astContent').style.display = tab === 'ast' ? 'block' : 'none';
-            document.getElementById('tokensContent').style.display = tab === 'tokens' ? 'block' : 'none';
-        }
-
-        function updateStatus(type, message) {
-            const indicator = document.getElementById('statusIndicator');
-            const text = document.getElementById('statusText');
-            const statusMessage = document.getElementById('statusMessage');
-            
-            indicator.className = `status-indicator ${type}`;
-            text.textContent = getStatusText(type);
-            statusMessage.textContent = message;
-        }
-
-        function getStatusText(type) {
-            const statusTexts = {
-                ready: 'Pronto',
-                compiling: 'Compilando',
-                running: 'Executando',
-                error: 'Erro'
-            };
-            return statusTexts[type] || 'Desconhecido';
-        }
-
-        async function compile() {
-            const code = document.getElementById('editor').value;
-            
-            if (!code.trim()) {
-                updateStatus('error', 'Código vazio');
-                return;
-            }
-
-            updateStatus('compiling', 'Compilando código...');
-            
-            try {
-                const response = await fetch('/api/compile', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ code })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    updateStatus('ready', 'Compilação bem-sucedida');
-                    displayOutput('✅ Código compilado com sucesso!', 'success');
-                    
-                    // Mostrar AST
-                    if (result.ast) {
-                        displayAST(result.ast);
-                    }
-                    
-                    // Mostrar tokens
-                    if (result.tokens) {
-                        displayTokens(result.tokens);
-                    }
-                } else {
-                    updateStatus('error', 'Erro de compilação');
-                    displayOutput('❌ Erros de compilação:\n' + result.errors.join('\n'), 'error');
-                }
-            } catch (error) {
-                updateStatus('error', 'Erro de comunicação');
-                displayOutput('❌ Erro de comunicação: ' + error.message, 'error');
+            menu.innerHTML = '';
+            for (const [key, ex] of Object.entries(examples)) {
+                const item = document.createElement('div');
+                item.className = 'example-item';
+                item.textContent = ex.name;
+                item.onclick = () => { if(editor) editor.setValue(ex.code); toggleExamples(); };
+                menu.appendChild(item);
             }
         }
 
-        async function executeSynchronous() {
-            const code = document.getElementById('editor').value;
-            
-            if (!code.trim()) {
-                updateStatus('error', 'Código vazio');
-                return;
-            }
+        function toggleExamples() { document.getElementById('examplesMenu').classList.toggle('show'); }
+        function updateStatus(message) { document.getElementById('statusMessage').textContent = message; }
 
-            updateStatus('running', 'Executando código...');
-            clearOutput();
-            
-            try {
-                const response = await fetch('/api/execute', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ code })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    updateStatus('ready', 'Execução concluída');
-                    if (result.output) {
-                        displayOutput('📤 Saída do programa:\n' + result.output, 'success');
-                        compile()
-                    } else {
-                        displayOutput('✅ Programa executado com sucesso (sem saída)', 'success');
-                        compile()
-                    }
-                } else {
-                    updateStatus('error', 'Erro de execução');
-                    displayOutput('❌ Erro de execução:\n' + result.error, 'error');
-                }
-            } catch (error) {
-                updateStatus('error', 'Erro de comunicação');
-                displayOutput('❌ Erro de comunicação: ' + error.message, 'error');
+        async function compileAndShow(code) {
+            clearTabs('ast', 'tokens');
+            const response = await fetch('/api/compile', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ code }) });
+            const result = await response.json();
+            if(result.success) {
+                document.getElementById('ast').textContent = JSON.stringify(result.ast, null, 2);
+                document.getElementById('tokens').textContent = result.tokens.map(t => `${t.type}(${t.value || ''}) @ ${t.line}:${t.column}`).join('\n');
+            } else {
+                displayInTab('ast', 'Erro de compilação:\n' + result.errors.join('\n'), 'error');
             }
         }
 
-        async function executeInteractive() {
-            const code = document.getElementById('editor').value;
+        async function execute() {
+            const code = editor.getValue();
+            if (!code.trim()) { alert('Editor de código está vazio.'); return; }
+
+            if (currentWebSocket) currentWebSocket.close();
             
-            if (!code.trim()) {
-                updateStatus('error', 'Código vazio');
-                return;
-            }
-
-            if (currentWebSocket) {
-                currentWebSocket.close();
-            }
-
-            updateStatus('running', 'Iniciando execução interativa...');
-            clearOutput();
+            updateStatus('Iniciando execução...');
+            clearTabs('output', 'sml_output', 'sml', 'ast', 'tokens');
             isExecuting = true;
             document.getElementById('stopBtn').disabled = false;
 
-            try {
-                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                const wsUrl = `${protocol}//${window.location.host}/api/execute-interactive`;
-                
-                currentWebSocket = new WebSocket(wsUrl);
-                
-                currentWebSocket.onopen = function() {
-                    updateStatus('running', 'Executando código interativo...');
-                    currentWebSocket.send(JSON.stringify({ code }));
-                };
-                
-                currentWebSocket.onmessage = function(event) {
-                    const data = JSON.parse(event.data);
-                    console.log('Mensagem WebSocket recebida:', data); // Debug
-                    
-                    switch (data.type) {
-                        case 'execution_started':
-                            displayOutput('🚀 Execução iniciada...', 'success');
-                            break;
-                            
-                        case 'output':
-                            displayOutput(data.data);
-                            break;
-                            
-                        case 'input_request':
-                            console.log('Solicitação de input para variável:', data.variable); // Debug
-                            showInputPrompt(data.message, data.variable);
-                            break;
-                            
-                        case 'execution_finished':
-                            if (data.success) {
-                                displayOutput('\n✅ Execução concluída com sucesso', 'success');
-                                updateStatus('ready', 'Execução concluída');
-                                compile()
-                            } else {
-                                console.error('Erro de execução:', data.error); // Debug
-                                displayOutput('\n❌ Execução falhou: ' + (data.error || 'Erro desconhecido'), 'error');
-                                updateStatus('error', 'Erro de execução');
-                            }
-                            stopExecution();
-                            break;
-                            
-                        case 'error':
-                            console.error('Erro WebSocket:', data.message); // Debug
-                            displayOutput('\n❌ Erro: ' + data.message, 'error');
-                            updateStatus('error', 'Erro de execução');
-                            stopExecution();
-                            break;
-                            
-                        default:
-                            console.warn('Tipo de mensagem desconhecido:', data.type); // Debug
-                    }
-                };
-                
-                currentWebSocket.onclose = function() {
-                    if (isExecuting) {
-                        updateStatus('ready', 'Execução interrompida');
-                        displayOutput('\n⚠️ Conexão fechada', 'error');
+            const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            currentWebSocket = new WebSocket(`${protocol}//${location.host}/api/execute-interactive`);
+
+            currentWebSocket.onopen = () => {
+                updateStatus('Conectado. Enviando código...');
+                currentWebSocket.send(JSON.stringify({ code }));
+            };
+
+            currentWebSocket.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                switch (data.type) {
+                    case 'output':
+                        displayInTab('output', data.data); break;
+                    case 'sml_translation':
+                        document.getElementById('sml').textContent = data.sml_code.join('\n');
+                        compileAndShow(code); break;
+                    case 'sml_execution_started':
+                        displayInTab('sml_output', '--- Iniciando Execução SML ---', 'info'); break;
+                    case 'sml_output':
+                        displayInTab('sml_output', data.data, 'success'); break;
+                    case 'input_request':
+                        showInputPrompt(data.message, data.variable); break;
+                    case 'execution_finished':
+                        const statusMsg = data.success ? 'Execução concluída.' : 'Erro de execução.';
+                        const statusClass = data.success ? 'success' : 'error';
+                        const finalMsg = `\n${data.success ? '✅' : '❌'} ${statusMsg}`;
+                        displayInTab('output', finalMsg, statusClass);
+                        displayInTab('sml_output', finalMsg, statusClass);
+                        if (!data.success) {
+                            displayInTab('output', data.error, 'error');
+                            displayInTab('sml_output', `Falha: ${data.error}`, 'error');
+                        }
+                        updateStatus(statusMsg);
                         stopExecution();
-                    }
-                };
-                
-                currentWebSocket.onerror = function(error) {
-                    updateStatus('error', 'Erro de WebSocket');
-                    displayOutput('\n❌ Erro de WebSocket: ' + error, 'error');
+                        break;
+                    case 'error':
+                        displayInTab('output', '\n❌ ERRO GERAL: ' + data.message, 'error');
+                        updateStatus('Erro na conexão.');
+                        stopExecution();
+                        break;
+                }
+            };
+            
+            currentWebSocket.onclose = () => {
+                if (isExecuting) {
+                    updateStatus('Execução interrompida.');
+                    displayInTab('output', '\n🔌 Conexão fechada.', 'error');
                     stopExecution();
-                };
-                
-            } catch (error) {
-                updateStatus('error', 'Erro ao conectar');
-                displayOutput('❌ Erro ao conectar: ' + error.message, 'error');
-                stopExecution();
-            }
+                }
+            };
         }
 
         function stopExecution() {
             if (currentWebSocket) {
-                currentWebSocket.send(JSON.stringify({ type: 'stop' }));
                 currentWebSocket.close();
                 currentWebSocket = null;
             }
-            
             isExecuting = false;
             document.getElementById('stopBtn').disabled = true;
             hideInputPrompt();
-            
-            if (document.getElementById('statusIndicator').className.includes('running')) {
-                updateStatus('ready', 'Execução interrompida');
+            if (document.getElementById('statusMessage').textContent.includes('Executando')) {
+                 updateStatus('Execução interrompida pelo usuário.');
             }
         }
-
+        
         function showInputPrompt(message, variable) {
             const prompt = document.getElementById('inputPrompt');
-            const promptText = document.getElementById('promptText');
-            const inputField = document.getElementById('inputField');
-            
-            promptText.textContent = message || '? ';
-            inputField.value = '';
-            inputField.placeholder = `Digite valor para '${variable}'`;
             prompt.style.display = 'flex';
+            const inputField = document.getElementById('inputField');
+            inputField.value = '';
+            inputField.placeholder = `Valor para '${variable || 'SML'}'`;
             inputField.focus();
-            
-            // Enter key support
-            inputField.onkeydown = function(e) {
-                if (e.key === 'Enter') {
-                    sendInput();
-                }
-            };
+            document.getElementById('promptText').textContent = message || '?';
+            inputField.onkeydown = (e) => { if (e.key === 'Enter') sendInput(); };
         }
 
-        function hideInputPrompt() {
-            const prompt = document.getElementById('inputPrompt');
-            prompt.style.display = 'none';
-        }
+        function hideInputPrompt() { document.getElementById('inputPrompt').style.display = 'none'; }
 
         function sendInput() {
             const inputField = document.getElementById('inputField');
             const value = inputField.value.trim();
-            
-            if (!value) {
-                inputField.focus();
-                return;
-            }
-            
-            // Validar se é um número
-            if (!/^-?\d+$/.test(value)) {
-                alert('Por favor, digite apenas números inteiros');
-                inputField.focus();
-                return;
-            }
-            
-            if (currentWebSocket && currentWebSocket.readyState === WebSocket.OPEN) {
-                console.log('Enviando input:', value); // Debug
-                currentWebSocket.send(JSON.stringify({
-                    type: 'input',
-                    value: value
-                }));
-            } else {
-                console.error('WebSocket não está conectado'); // Debug
-                displayOutput('❌ Erro: Conexão perdida', 'error');
-                return;
-            }
-            
-            displayOutput(`> ${value}`, 'input');
+            if (!/^-?\d+$/.test(value)) { alert('Por favor, digite um número inteiro.'); return; }
+            if (currentWebSocket) currentWebSocket.send(JSON.stringify({ type: 'input', value }));
+            // Mostra o input na aba de saída ativa no momento
+            const activeTabId = document.querySelector('.tab.active').dataset.tab;
+            displayInTab(activeTabId, `> ${value}`);
             hideInputPrompt();
         }
-
-        function displayOutput(text, type = '') {
-            const output = document.getElementById('outputContent');
-            const div = document.createElement('div');
-            div.className = type;
-            div.textContent = text;
-            output.appendChild(div);
-            output.scrollTop = output.scrollHeight;
-            
-            // Switch to output tab if not already there
-            if (currentTab !== 'output') {
-                switchTab('output');
-                document.querySelector('.tab').click();
-            }
-        }
-
-        function clearOutput() {
-            document.getElementById('outputContent').innerHTML = '';
-            document.getElementById('astContent').innerHTML = '';
-            document.getElementById('tokensContent').innerHTML = '';
-        }
-
-        function clearAll() {
-            document.getElementById('editor').value = '';
-            clearOutput();
-            updateLineNumbers();
-            updateStatus('ready', 'Tudo limpo');
-        }
-
-        function displayAST(ast) {
-            const astContent = document.getElementById('astContent');
-            astContent.innerHTML = '';
-            
-            function renderNode(node, depth = 0) {
-                const div = document.createElement('div');
-                div.className = 'ast-node';
-                div.style.marginLeft = (depth * 20) + 'px';
-                
-                let content = `<span class="ast-node-type">${node.type}</span>`;
-                
-                if (node.type === 'Program') {
-                    content += ` (${Object.keys(node.lines).length} linhas)`;
-                    astContent.appendChild(div);
-                    div.innerHTML = content;
-                    
-                    // Render lines
-                    for (const [lineNum, lineNode] of Object.entries(node.lines)) {
-                        const lineDiv = document.createElement('div');
-                        lineDiv.className = 'ast-node';
-                        lineDiv.style.marginLeft = ((depth + 1) * 20) + 'px';
-                        lineDiv.innerHTML = `<span class="ast-node-type">Linha ${lineNum}:</span>`;
-                        astContent.appendChild(lineDiv);
-                        renderNode(lineNode, depth + 2);
-                    }
-                } else {
-                    // Add specific node information
-                    if (node.var) content += ` var: <span class="ast-node-value">${node.var}</span>`;
-                    if (node.value !== undefined) content += ` value: <span class="ast-node-value">${node.value}</span>`;
-                    if (node.name) content += ` name: <span class="ast-node-value">${node.name}</span>`;
-                    if (node.op) content += ` op: <span class="ast-node-value">${node.op}</span>`;
-                    if (node.target) content += ` target: <span class="ast-node-value">${node.target}</span>`;
-                    if (node.line) content += ` (linha ${node.line})`;
-                    
-                    div.innerHTML = content;
-                    astContent.appendChild(div);
-                    
-                    // Render child nodes
-                    if (node.expr) renderNode(node.expr, depth + 1);
-                    if (node.left) renderNode(node.left, depth + 1);
-                    if (node.right) renderNode(node.right, depth + 1);
-                }
-            }
-            
-            renderNode(ast);
-        }
-
-        function displayTokens(tokens) {
-            const tokensContent = document.getElementById('tokensContent');
-            tokensContent.innerHTML = '';
-            
-            tokens.forEach((token, index) => {
-                const div = document.createElement('div');
-                div.style.marginBottom = '5px';
-                div.innerHTML = `<strong>${index + 1}.</strong> ${token.type} ` +
-                    `<span style="color: #27ae60;">"${token.value}"</span> ` +
-                    `<span style="color: #7f8c8d;">(${token.line}:${token.column})</span>`;
-                tokensContent.appendChild(div);
-            });
-        }
-
-        // Close examples menu when clicking outside
-        document.addEventListener('click', function(event) {
-            const dropdown = document.querySelector('.examples-dropdown');
-            const menu = document.getElementById('examplesMenu');
-            
-            if (!dropdown.contains(event.target)) {
-                menu.classList.remove('show');
-            }
-        });
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', function(e) {
-            if (e.ctrlKey) {
-                switch (e.key) {
-                    case 'Enter':
-                        e.preventDefault();
-                        if (e.shiftKey) {
-                            executeInteractive();
-                        } else {
-                            executeSynchronous();
-                        }
-                        break;
-                    case 's':
-                        e.preventDefault();
-                        compile();
-                        break;
-                    case 'l':
-                        e.preventDefault();
-                        clearAll();
-                        break;
-                }
-            }
-            
-            if (e.key === 'Escape' && isExecuting) {
-                stopExecution();
-            }
-        });
     </script>
 </body>
 </html>
